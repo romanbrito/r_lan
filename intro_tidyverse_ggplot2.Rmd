@@ -1,0 +1,125 @@
+```{r scattered_plot}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+
+# Scatterd plot
+gapminder_2007 <- gapminder %>% filter(year == 2007)
+
+ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point()
+```
+```{r ggplot_1}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+
+# Scatterd plot
+gapminder_1952 <- gapminder %>% filter(year == 1952)
+
+# Change to put pop on the x-axis and gdpPercap on the y-axis
+ggplot(gapminder_1952, aes(x = pop, y = gdpPercap)) +
+  geom_point()
+```
+```{r log_scales}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+
+# Scatterd plot
+gapminder_2007 <- gapminder %>% filter(year == 2007)
+
+ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r log_more_aes}
+# some aesthatics x, y, color, size
+# on a scattered plot (geom_point())
+
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+
+# Scatterd plot
+# use color for categorical variables like the continent
+# use size for numerical values like the population in each observation
+gapminder_2007 <- gapminder %>% filter(year == 2007)
+
+ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp, color = continent,
+                           size = pop)) +
+  geom_point() +
+  scale_x_log10()
+```
+```{r faceting}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+
+# Scatterd plot
+gapminder_2007 <- gapminder %>% filter(year == 2007)
+
+ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp, color = continent,
+                           size = pop)) +
+  geom_point() +
+  scale_x_log10() +
+  facet_wrap(~ continent)
+
+# faceting
+# ~ means by
+# facet_wrap creates smaller graphs for each categorical variable.
+```
+```{r faceting_2}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+
+# Scatter plot comparing gdpPercap and lifeExp, with color
+# representing continent and size representing population, faceted by year
+ggplot(gapminder,
+       aes(x = gdpPercap, y = lifeExp, color = continent, size = pop))
++ geom_point() + scale_x_log10() + facet_wrap(~ year)
+```
+```{r summarized_data}
+library(dplyr)
+library(ggplot2)
+by_year <- gapminder %>%
+  group_by(year) %>%
+  summarize(totalPop = sum(pop), meanLifeExp = mean(lifeExp))
+
+ggplot(by_year, aes(x = year, y = totalPop)) + geom_point()
+
+# Specify the y axis starts at zero with expand_limits(y = 0)
+
+ggplot(by_year, aes(x = year, y = totalPop)) +
+  geom_point() +
+  expand_limits(y = 0)
+```
+```{r summarize_w_color}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+# Visualize by year and continent
+
+by_year_continent <- gapminder %>%
+  group_by(year, continent) %>%
+  summarize(totalPop = sum(pop), meanLifeExp = mean(lifeExp))
+
+ggplot(by_year_continent, aes(x = year, y = totalPop, color = continent)) +
+  geom_point() +
+  expand_limits(y = 0)
+```
+```{r oceania}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+# Visualize by year and continent
+
+country_australia <- gapminder %>%
+  filter(country == "Australia")
+
+ggplot(country_australia, aes(x = year, y = pop)) +
+  geom_point() +
+  expand_limits(y = 0)
+```

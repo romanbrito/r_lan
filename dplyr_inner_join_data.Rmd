@@ -1,0 +1,54 @@
+```{r read_data}
+library(readr)
+library(dplyr)
+sets <- read_csv("sets.csv")
+themes <- read_csv("themes.csv")
+parts <- read_csv("parts.csv")
+part_categories <- read_csv("part_categories.csv")
+inventories <- read_csv("inventories.csv")
+inventory_parts <- read_csv("inventory_parts.csv")
+
+sets %>% head(3)
+themes %>% head(3)
+parts %>% head(3)
+part_categories %>% head(3)
+inventories %>% head(3)
+inventory_parts %>% head(3)
+```
+```{r join_tables}
+library(dplyr)
+
+# Join tables by the theme_id
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"))
+```
+```{r join_tables_cus}
+library(dplyr)
+
+# Join tables by the theme_id but append _set to set columns (instead of name.x) and
+# _them to theme columns (instead of name.y)
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme"))
+```
+```{r join_tables_most_common}
+library(dplyr)
+
+# Most common themes
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme")) %>%
+  count(name_theme, sort = TRUE)
+```
+```{r join_one_to_many}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  filter(version == 1)
+```
+```{r join_one_to_many_parts}
+parts %>%
+  inner_join(inventory_parts, by = "part_num")
+```
+```{r join_more}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme"))
+```
