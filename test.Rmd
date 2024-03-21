@@ -1,0 +1,261 @@
+---
+title: "NYPD Shooting Incident Data Report"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.align = "center", echo = TRUE)
+```
+
+## Introduction
+This project illustrates the steps in the data science process in a reproducible way. I am creating a report on the NYPD Shooting incident data from 2006 to 2021. You will see that the steps in the data science process have been followed.
+
+- [x] Import data
+- [x] Tidy
+- [x] Analyze 
+
+This project also contains at least two visualizations, incorporates population data for comparison among boroughs, and integrates employment data for the modeling. Finally, some potential bias is identified.
+
+### Sources
+- https://catalog.data.gov/
+- https://data.cityofnewyork.us/
+- https://scholar.harvard.edu/files/angelalee/files/1-s2.0-s0049089x19301188-main.pdf
+    - "A time-sensitive analysis of the work-crime relationship for young men" by Angela Wang Lee, Department of Sociology, Harvard University
+
+## About the data
+For this project, we are interested in the following variables:
+
+- OCCUR_DATE: Date
+- BORO: Borough
+- STATISTICAL_MURDER_FLAG: Murder
+- PERP_AGE_GROUP: Perpetrator’s Age
+- PERP_SEX: Perpetrator’s Sex
+- PERP_RACE: Perpetrator’s Race
+- VIC_AGE_GROUP: Victim’s Age
+- VIC_SEX: Victim’s  Sex
+- VIC_RACE: Victim’s Race
+
+We also introduce: **Population per Borough** and **Employment per Borough**
+
+## Import data
+
+```{r nypd_shooting_incident_data, message = FALSE}
+library(readr)
+
+nypd_shooting_url_in <- "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD"
+nypd_shooting_incident_data <- read_csv(nypd_shooting_url_in)
+```
+
+## Tidy
+
+```{r tidy, , message = FALSE, message = FALSE}
+library(dplyr)
+library(lubridate)
+
+# Removing unnecessary columns, date formatting, and renaming
+
+nypd_shooting_incident_data <- nypd_shooting_incident_data %>%
+    select(-c(INCIDENT_KEY,
+        X_COORD_CD,
+        Y_COORD_CD,
+        Latitude,
+        Longitude,
+        Lon_Lat,
+        PRECINCT,
+        JURISDICTION_CODE,
+        LOCATION_DESC,
+        OCCUR_TIME)) %>%
+    mutate(OCCUR_DATE = mdy(OCCUR_DATE)) %>%
+    rename(occur_date = `OCCUR_DATE`,
+        boro = `BORO`,
+        murder = `STATISTICAL_MURDER_FLAG`,
+        perp_age = `PERP_AGE_GROUP`,
+        perp_sex = `PERP_SEX`,
+        perp_race = `PERP_RACE`,
+        vic_age = `VIC_AGE_GROUP`,
+        vic_sex = `VIC_SEX`,
+        vic_race = `VIC_RACE`)
+
+summary(nypd_shooting_incident_data)
+```
+
+## Transform
+
+```{r transform, message = FALSE}
+library(tidyr)
+library(stringr)
+library(ggplot2)
+
+# Incorporating population by borough, removing unnecessary columns, date formatting, data mutation
+
+nyc_population_url_in <- "https://data.cityofnewyork.us/resource/xywu-7bv9.csv"
+nyc_population <- read_csv(nyc_population_url_in)
+nyc_population <- nyc_population %>%
+    select(-c(age_group, contains("_boro"))) %>%
+    pivot_longer(cols = -`borough`, names_to = "pop_year", values_to = "population") %>%
+    mutate(pop_year = str_sub(pop_year, 2, 5), borough = str_to_upper(borough)) %>%
+    mutate(pop_year = ymd(pop_year, truncated = 2L)) %>%
+    rename(boro = `borough`)
+
+nypd_shooting_incident_data <- nypd_shooting_incident_data %>%
+    left_join(nyc_population, by = "boro") %>%
+    filter(year(occur_date) %% year(pop_year) <= 9)
+
+summary(nypd_shooting_incident_data)
+```
+
+## Visualize
+
+```{r visualize_shootings_borough, message = FALSE}
+# Plot shootings per day per borough
+
+nypd_shooting_incident_data %>%
+    mutate(shootings = 1) %>%
+    group_by(occur_date, boro) %>%
+    summarise(shootings = sum(shootings)) %>%
+    ggplot(aes(x = occur_date, y = shootings, color = boro)) +
+    geom_line() +
+    labs(
+        title = "Daily Shootings in NYC",
+        x = "Date",
+        y = "Shootings")
+
+# Plot shootings per year per borough per million population
+
+nypd_shooting_incident_data %>%
+    mutate(shootings = 1, occur_year = str_sub(occur_date, 1, 4)) %>%
+    group_by(occur_year, boro, population) %>%
+    summarise(shootings = sum(shootings)) %>%
+    mutate(shootings_per_mill = shootings * 1000000 / population) %>%
+    ggplot(aes(x = occur_year, y = shootings_per_mill, color = boro)) +
+    geom_point() +
+    labs(
+        title = "Annual Shootings in NYC",
+        x = "Year",
+        y = "Shootings per million people")
+
+nypd_shooting_incident_data %>%
+    mutate(shootings = 1, occur_year = str_sub(occur_date, 1, 4)) %>%
+    group_by(occur_year, boro, population) %>%
+    summarise(shootings = sum(shootings)) %>%
+    mutate(shootings_per_mill = shootings * 1000000 / population) %>%
+    ggplot(aes(x = occur_year, y = shootings_per_mill, fill = boro)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    labs(
+        title = "Annual Shootings in NYC",
+        x = "Year",
+        y = "Shootings per million people")
+```
+```{r visualize_shootings_sex, message = FALSE}
+# Plot shooting victims by sex
+
+vic_by_sex <- nypd_shooting_incident_data %>%
+    mutate(shootings = 1, occur_year = str_sub(occur_date, 1, 4)) %>%
+    group_by(occur_year, boro, population, vic_sex) %>%
+    summarise(shootings = sum(shootings)) %>%
+    mutate(shootings_per_mill = shootings * 1000000 / population)
+
+vic_by_sex %>%
+    filter(vic_sex != "U") %>%
+    group_by(occur_year, vic_sex, population) %>%
+    summarise(shootings = sum(shootings)) %>%
+    mutate(shootings_per_mill = shootings * 1000000 / population) %>%
+    ggplot(aes(x = occur_year, y = shootings_per_mill, fill = vic_sex)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    labs(
+        title = "Annual Shootings in NYC by Victim sex",
+        x = "Year",
+        y = "Shootings per million people")
+
+# Plot shooting perpetrators by sex
+
+perp_by_sex <- nypd_shooting_incident_data %>%
+    mutate(shootings = 1, occur_year = str_sub(occur_date, 1, 4)) %>%
+    group_by(occur_year, boro, population, perp_sex) %>%
+    summarise(shootings = sum(shootings)) %>%
+    mutate(shootings_per_mill = shootings * 1000000 / population)
+
+perp_by_sex %>%
+    drop_na() %>%
+    filter(perp_sex != "U") %>%
+    group_by(occur_year, perp_sex, population) %>%
+    summarise(shootings = sum(shootings)) %>%
+    mutate(shootings_per_mill = shootings * 1000000 / population) %>%
+    ggplot(aes(x = occur_year, y = shootings_per_mill, fill = perp_sex)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+        labs(
+        title = "Annual Shootings in NYC by Perpetrator sex",
+        x = "Year",
+        y = "Shootings per million people")
+```
+
+## Modeling Data
+
+```{r modeling_data, message = FALSE}
+nypd_shooting_month <- nypd_shooting_incident_data %>%
+    mutate(shootings = 1) %>%
+    group_by(date = floor_date(occur_date, "month")) %>%
+    summarise(shootings = sum(shootings))
+
+# Introducing Employment in NYC
+
+employment <- read_csv("https://data.cityofnewyork.us/api/views/5hjv-bjbv/rows.csv?accessType=DOWNLOAD")
+tot_employ <- employment %>%
+    filter(INDUSTRY == "Total Private") %>%
+    select(-c(`PUBLICATION DATE`,
+        INDUSTRY,
+        METHOD,
+        `REVISION REASON`)) %>%
+    rename(year = `REFERENCE YEAR`,
+        month = `REFERENCE MONTH`,
+        employment = `EMPLOYMENT`)
+
+tot_employ_month <- tot_employ %>%
+        mutate(date = str_c(year, "-", month)) %>%
+        mutate(date = ym(date)) %>%
+        select(-c(year, month))
+
+shooting_employment <- nypd_shooting_month %>%
+    left_join(tot_employ_month, by = "date") %>%
+     group_by(date) %>%
+     summarise(shootings = max(shootings), employment = max(employment))
+
+# Model
+
+mod <- lm(shootings ~ employment, data = shooting_employment)
+summary(mod)
+
+shooting_employment_w_pred <- shooting_employment %>%
+    mutate(pred = predict(mod))
+
+shooting_employment_w_pred %>%
+    ggplot() +
+    geom_point(aes(x = employment, y = shootings), color = "blue") +
+    geom_point(aes(x = employment, y = pred), color = "red") +
+        labs(
+        title = "Shooting - Employment Model for NYC",
+        x = "Employment",
+        y = "Shootings")
+```
+
+## Possible Bias
+
+In this report, some bias could have been introduced in a few parts, such as when the population is incorporated and how NA and undefined values are handled. 
+Population data comes from https://data.cityofnewyourk.us, and we assume that it is accurate; also, for simplicity, I ignore NA and undefined values, but in a different context, these values would deserve some more analysis.
+As for personal bias, I had the pre-conception that some boroughs would have more shootings than others and that men are more prone to commit shootings while women tend to be the victims.
+I expected, for example, that Manhattan would have the least number of shootings when adjusting by population, but that was not the case. In the same way, I expected more female victims, but that wasn’t the case, either.
+
+## Analysis
+
+This analysis comes in three tiers. First, shootings by borough; second, sex dynamics; and third, employment in correlation to shootings.
+Contrary to my expectations, I found that Manhattan has plenty of shootings; most of the time, Manhattan's shootings come third, just below Bronx and Brooklyn. Queens and Staten Island are at the bottom, with around 100 annual shootings per million people, while the Bronx has the most shootings at about 5 times Staten Island’s figures.
+Shootings are mostly a male phenomenon in NYC, as men are protagonists in most of the incidents. This begs the question of what other factors are causing these shootings in NYC. Some Theories suggest that there is a relationship between work and crime, so I introduced “Total Private” employment as a proxy to work and created a linear model to explain shootings (crime) in relation to employment (work).
+There seems to be an inverse relationship between shootings and employment which concurs with the literature.
+
+## Conclusion
+
+As we understand crime and shootings, we observe that employment catalyzes prosperity and peace in society. Also, the data strongly suggest paying particular attention to male actors as they are involved in most shootings.
+```{r sessionInfo}
+sessionInfo()
+```

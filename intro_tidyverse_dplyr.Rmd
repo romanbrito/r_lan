@@ -1,0 +1,112 @@
+```{r gapminder}
+# Load the gapminder package
+library(gapminder)
+
+# Load the dplyr package
+library(dplyr)
+
+# Look at the gapminder dataset
+gapminder
+```
+```{r filter_1}
+library(gapminder)
+library(dplyr)
+
+# Filter the gapminder dataset for the year 1957
+gapminder %>% filter(year == 1957)
+```
+```{r filter_2}
+library(gapminder)
+library(dplyr)
+
+# Filter for China in 2002
+gapminder %>% filter(country == "China", year == 2002)
+```
+
+```{r arrange_1}
+library(gapminder)
+library(dplyr)
+
+gapminder %>% arrange(gdpPercap)
+gapminder %>% arrange(desc(gdpPercap))
+gapminder %>%
+  filter(year == 2007) %>%
+  arrange(desc(gdpPercap))
+```
+```{r arrange_2}
+# arrange sorts the observations based on some variables
+library(gapminder)
+library(dplyr)
+
+# Sort in ascending order of lifeExp
+gapminder %>% arrange(lifeExp)
+
+# Sort in descending order of lifeExp
+gapminder %>% arrange(desc(lifeExp))
+
+# Filter for the year 1957, then arrange in descending order of population
+gapminder %>%
+  filter(year == 1957) %>%
+  arrange(desc(pop))
+```
+```{r mutate_1}
+library(gapminder)
+library(dplyr)
+
+gapminder %>% mutate(pop = pop / 1000000)
+
+# add a new variable
+gapminder %>% mutate(gdp = gdpPercap * pop)
+
+gapminder %>%
+  mutate(gdp = gdpPercap * pop) %>%
+  filter(year == 2007) %>%
+  arrange(desc(gdp))
+```
+```{r mutate_2}
+library(gapminder)
+library(dplyr)
+# Use mutate to change lifeExp to be in months
+gapminder %>% mutate(lifeExp = 12 * lifeExp)
+
+# Use mutate to create a new column called lifeExpMonths
+gapminder %>% mutate(lifeExpMonths = 12 * lifeExp)
+```
+```{r combine_filter_mutate_arrange}
+library(gapminder)
+library(dplyr)
+
+gapminder %>%
+  filter(year == 2007) %>%
+  mutate(lifeExpMonths = 12 * lifeExp) %>%
+  arrange(desc(lifeExpMonths))
+```
+```{r summarize}
+# Functions you can use for summarizing: mean, sum, median, min, max
+library(gapminder)
+library(dplyr)
+
+gapminder %>%
+  filter(year == 2007) %>%
+  summarize(meanLifeExp = mean(lifeExp), totalPop = sum(pop))
+```
+```{r group_by_verb}
+# Same as above but for all years
+
+library(gapminder)
+library(dplyr)
+
+gapminder %>%
+  group_by(year) %>%
+  summarize(meanLifeExp = mean(lifeExp), totalPop = sum(pop))
+# Summarize by continent
+gapminder %>%
+  filter(year == 2007) %>%
+  group_by(continent) %>%
+  summarize(meanLifeExp = mean(lifeExp), totalPop = sum(pop))
+
+# Summarize by continent and year
+gapminder %>%
+  group_by(year, continent) %>%
+  summarize(meanLifeExp = mean(lifeExp), totalPop = sum(pop))
+```

@@ -1,0 +1,143 @@
+```{r func_documentation}
+# Consult the documentation on the mean() function
+help(mean)
+
+# Inspect the arguments of the mean() function
+args(mean)
+
+# The linkedin and facebook vectors have already been created for you
+linkedin <- c(16, 9, 13, 5, 2, 17, 14)
+facebook <- c(17, 7, 5, 16, 8, 13, 14)
+
+# Calculate average number of views
+avg_li <- mean(linkedin)
+avg_fb <- mean(facebook)
+
+# Inspect avg_li and avg_fb
+avg_li
+avg_fb
+```
+```{r mean}
+# Calculate the mean of the sum
+avg_sum <- mean(linkedin + facebook)
+
+# Calculate the trimmed mean of the sum
+avg_sum_trimmed <- mean(linkedin + facebook, trim = 0.2)
+
+# Inspect both new variables
+avg_sum
+avg_sum_trimmed
+```
+```{r mean_options}
+# The linkedin and facebook vectors have already been created for you
+linkedin <- c(16, 9, 13, 5, NA, 17, 14)
+facebook <- c(17, NA, 5, 16, 8, 13, 14)
+
+# Basic average of linkedin
+mean(linkedin)
+
+# Advanced average of linkedin
+mean(linkedin, trim = 0, na.rm = TRUE)
+
+# Calculate the mean absolute deviation
+mean(abs(linkedin - facebook), trim = 0, na.rm = TRUE)
+```
+```{r writing_functions}
+# Create a function pow_two()
+pow_two <- function(n) {
+  return(n * n)
+}
+
+# Use the function
+pow_two(12)
+
+# Create a function sum_abs()
+sum_abs <- function(a, b) {
+  return(abs(a) + abs(b))
+}
+
+# Use the function
+sum_abs(-2, 3)
+```
+```{r function_default}
+# Finish the pow_two() function
+pow_two <- function(x, print_info = TRUE) {
+  y <- x ^ 2
+  if (print_info) {
+    print(paste(x, "to the power two equals", y))
+  }
+  return(y)
+}
+```
+```{r function_exercise}
+linkedin <- c(16, 9, 13, 5, 2, 17, 14)
+facebook <- c(17, 7, 5, 16, 8, 13, 14)
+
+# Define the interpret function
+interpret <- function(num_views) {
+  if (num_views > 15) {
+    print("You're popular!")
+    return(num_views)
+  } else {
+    print("Try to be more visible!")
+    return((0))
+  }
+}
+
+# Define the interpret_all() function
+# views: vector with data to interpret
+# return_sum: return total number of views on popular days?
+interpret_all <- function(views, return_sum = TRUE) {
+  count <- 0
+
+  for (v in views) {
+    count <- count + interpret(v)
+  }
+
+  if (return_sum) {
+    return(count)
+  } else {
+    return(NULL)
+  }
+}
+
+interpret_all(linkedin)
+interpret_all(facebook)
+```
+Useful funcitions
+- sapply(), vapply(), lapply()
+- sort(), print(), identical()
+```{r math_util}
+# abs: absolute value of an array of numerical values
+# round: rounds up the value
+# sum: computes the sum of the input array
+# mean: arithmetic mean
+v1 <- c(1.1, -7.1, 5.4, -2.7)
+v2 <- c(-3.6, 4.1, 5.8, -8.0)
+mean(c(sum(round(abs(v1))), sum(round(abs(v2)))))
+```
+```{r more_funcs}
+# seq: generates a squence of numbers
+# rep: replicate
+# sort: sorting an input vector in ascending order (can use decreasing = TRUE)
+# sequence from 8 to 2 by -2, replicate times 2 (can use each 2)
+sort(rep(seq(8, 2, by = -2), times = 2))
+sort(rep(seq(8, 2, by = -2), times = 2), decreasing = TRUE)
+```
+```{r even_more}
+# str: inspect the structure
+# is.*(): checks type
+# as.*(): converts to certain type
+# unlist: converts a list ot a vector
+# append: add elements to a vector or a list
+# rev: reverses the list
+v1 <- c(1, 2, 4)
+str(v1)
+li <- list(log = TRUE, ch = "hello", int_vec = sort(rep(seq(8, 2, by = -2), times = 2)))
+str(li)
+
+is.list(li) # TRUE
+is.list(c(1, 2, 3)) # FALSE
+li2 <- as.list(c(1, 2, 3))
+is.list(li2) # TRUE
+```
