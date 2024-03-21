@@ -1,0 +1,357 @@
+Data from https://www.nu3.de/blogs/nutrition/food-carbon-footprint-index-2018
+2018 Food Carbon Footprint Index from nu3. The food_consumption dataset contains information 
+about the kilograms of food consumed per person per year in each country in each food category (consumption) 
+as well as information about the carbon footprint of that food category (co2_emissions) measured in kilograms
+of carbon dioxide, or CO, per person per year in each country.
+
+install.packages("ggplot2")
+install.packages("readr")
+install.packages("dplyr")
+
+```{r load_data_pivot}
+library(readr)
+library(dplyr)
+library(tidyr)
+food_carbon_footprint <- read_csv("food-carbon-footprint-index-2018-nu3-en.csv")
+
+# pivot_longer and pivot_wider to tidy dataset to ease the analysis
+food_consumption <- food_carbon_footprint %>%
+  select(
+    -total_animal_co2_emission,
+    -total_non_animal_co2_emission,
+    -diff_animal_non_animal
+  ) %>%
+  pivot_longer(
+    cols = ends_with("consumption") | ends_with("emission"),
+    names_to = c("food_category", "type"),
+    names_pattern = "([^\r\n\t\f\v ]*?)_.?(co2_emission|consumption)"
+  ) %>%
+  pivot_wider(
+    names_from = c(type)
+  )
+food_consumption %>% print(n = 30)
+```
+```{r mean_median}
+library(ggplot2)
+
+belgium_consumption <- food_consumption %>%
+  filter(country == "Belgium")
+
+# Filter for USA
+usa_consumption <- food_consumption %>%
+  filter(country == "USA")
+
+# Calculate mean and median consumption in Belgium
+mean(belgium_consumption$consumption)
+median(belgium_consumption$consumption)
+
+# Calculate mean and median consumption in USA
+mean(usa_consumption$consumption)
+median(usa_consumption$consumption)
+
+food_consumption %>%
+  # Filter for Belgium and USA
+  filter(country %in% c("Belgium", "USA")) %>%
+  # Group by country
+  group_by(country) %>%
+  # Get mean_consumption and median_consumption
+  summarize(mean_consumption = mean(consumption),
+      median_consumption = median(consumption))
+```
+```{r histogram_mean_median}
+food_consumption %>%
+  # Filter for rice food category
+  filter(food_category == "rice") %>%
+  # Create histogram of co2_emission
+  ggplot(aes(x = co2_emission)) +
+    geom_histogram()
+
+food_consumption %>%
+  # Filter for rice food category
+  filter(food_category == "rice") %>% 
+  # Get mean_co2 and median_co2
+  summarize(mean_co2 = mean(co2_emission),
+            median_co2 = median(co2_emission))
+```
+```{r spread_quartiles_quantiles}
+# Calculate the quartiles of co2_emission
+quantile(food_consumption$co2_emission)
+
+# Calculate the six quantiles that split up
+# the data into 5 pieces (quintiles) of the
+# co2_emission column of food_consumption.
+quantile(food_consumption$co2_emission, probs = c(0, 0.2, 0.4, 0.6, 0.8, 1))
+
+# Calculate the deciles of co2_emission
+quantile(food_consumption$co2_emission, probs = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
+```
+```{r variance_sd}
+# Calculate variance and sd of co2_emission for each food_category
+food_consumption %>% 
+  group_by(food_category) %>%
+  summarize(var_co2 = var(co2_emission),
+     sd_co2 = sd(co2_emission))
+
+# Plot food_consumption with co2_emission on x-axis
+ggplot(food_consumption, aes(x = co2_emission)) +
+  # Create a histogram
+  geom_histogram() +
+  # Create a separate sub-graph for each food_category
+  facet_wrap(~ food_category)
+```
+```{r outliers_IQR}
+# IQR Interquartile range
+
+# Calculate total co2_emission per country: emissions_by_country
+emissions_by_country <- food_consumption %>%
+  group_by(country) %>%
+  summarize(total_emission = sum(co2_emission))
+
+emissions_by_country
+
+# Compute the first and third quartiles and IQR of total_emission
+q1 <- quantile(emissions_by_country$total_emission, 0.25)
+q3 <- quantile(emissions_by_country$total_emission, 0.75)
+iqr <- q3 - q1
+
+# Calculate the lower and upper cutoffs for outliers
+lower <- q1 - 1.5 * iqr
+upper <- q3 + 1.5 * iqr
+
+# Filter emissions_by_country to find outliers
+emissions_by_country %>%
+  filter(total_emission < lower | total_emission > upper)
+```
+```{r probabilities}
+library(readr)
+amir_deals <- read_csv("amir_deals.csv")
+
+# Count the deals for each product
+amir_deals %>%
+  count(product)
+
+# Calculate probability of picking a deal with each product
+amir_deals %>%
+  count(product) %>%
+  mutate(prob = n / sum(n))
+```
+```{r sampling}
+# Set random seed to 31
+set.seed(31)
+
+# Sample 5 deals without replacement
+amir_deals %>%
+  sample_n(5)
+
+# Sample 5 deals with replacement
+amir_deals %>%
+  sample_n(5, replace = TRUE)
+```
+```{r prob_discrete_distribution}
+group_id <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "j")
+group_size <- c(2, 4, 6, 2, 2, 2, 3, 2, 4, 2)
+restaurant_groups <- data.frame(group_id, group_size)
+
+# Create a histogram of group_size
+ggplot(restaurant_groups, aes(x = group_size)) +
+  geom_histogram(bins = 5)
+
+# Create probability distribution
+size_distribution <- restaurant_groups %>%
+  # Count number of each group size
+  count(group_size) %>%
+  # Calculate probability
+  mutate(probability = n / sum(n))
+
+size_distribution
+
+# Calculate expected group size
+expected_val <- sum(size_distribution$probability *
+                      size_distribution$group_size)
+expected_val
+
+# Calculate probability of picking group of 4 or more
+size_distribution %>%
+  # Filter for groups of 4 or larger
+  filter(group_size >= 4) %>%
+  # Calculate prob_4_or_more by taking sum of probabilities
+  summarize(prob_4_or_more = sum(probability))
+```
+```{r prob_continuous_distribution}
+# Min and max wait times for back-up that happens every 30 min
+min <- 0
+max <- 30
+
+# Calculate probability of waiting less than 5 mins
+prob_less_than_5 <- punif(5, min, max)
+prob_less_than_5
+
+# Calculate probability of waiting more than 5 mins
+prob_greater_than_5 <- punif(5, min, max, lower.tail = FALSE)
+prob_greater_than_5
+
+# Calculate probability of waiting 10-20 mins
+prob_between_10_and_20 <- punif(20, min, max) - punif(10, min, max)
+prob_between_10_and_20
+```
+```{r simulating_wait_times}
+# Vector from 1 to 1000 using sec create a sequence
+simulation_nb <- seq(1, 1000)
+wait_times <- as_tibble(data.frame(simulation_nb))
+wait_times
+# Set random seed to 334
+set.seed(334)
+
+# Generate 1000 wait times between 0 and 30 mins, save in time column
+wait_times %>%
+  mutate(time = runif(1000, min = 0, max = 30)) %>%
+  # Create a histogram of simulated times
+  ggplot(aes(x = time)) +
+  geom_histogram()
+```
+```{r binomial_dist}
+# Set random seed to 10
+set.seed(10)
+
+# Simulate a single deal
+rbinom(1, 1, 0.3)
+
+# Simulate 1 week of 3 deals
+rbinom(1, 3, 0.3)
+
+# Simulate 52 weeks of 3 deals
+deals <- rbinom(52, 3, 0.3)
+table(deals)
+length(deals)
+
+# Calculate mean deals won per week
+mean(deals)
+
+# Probability of closing 3 out of 3 deals
+dbinom(3, 3, 0.3)
+
+# Probability of closing <= 1 deal out of 3 deals
+pbinom(1, 3, 0.3)
+
+# Probability of closing > 1 deal out of 3 deals
+pbinom(1, 3, 0.3, lower.tail = FALSE)
+# same as 1 - pbinom(1, 3, 0.3)
+```
+```{r expected_value}
+# Expected number won with 30% win rate
+won_30pct <- 3 * 0.3
+won_30pct
+
+# Expected number won with 25% win rate
+won_25pct <- 3 * 0.25
+won_25pct
+
+# Expected number won with 35% win rate
+won_35pct <- 3 * 0.35
+won_35pct
+```
+```{r normal_dist}
+# Histogram of amount with 10 bins
+ggplot(amir_deals, aes(x = amount)) + geom_histogram(bins = 10)
+
+# Probability of deal < 7500
+pnorm(7500, mean = 5000, sd = 2000)
+
+# Probability of deal > 1000
+pnorm(1000, mean = 5000, sd = 2000, lower.tail = FALSE)
+
+# Probability of deal between 3000 and 7000
+pnorm(7000, mean = 5000, sd = 2000) - pnorm(3000, mean = 5000, sd = 2000)
+
+# Calculate amount that 75% of deals will be more than
+qnorm(0.75, mean = 5000, sd = 2000, lower.tail = FALSE)
+```
+```{r new_market_conditions}
+# Sales to increase by 20%, standard deviation (volatility) 30% up
+new_sales <- data.frame(seq(1, 36))
+
+# Calculate new average amount
+new_mean <- 5000 * 1.2
+
+# Calculate new standard deviation
+new_sd <- 2000 * 1.3
+
+# Simulate 36 sales
+new_sales <- new_sales %>%
+  mutate(amount = rnorm(36, mean = new_mean, sd = new_sd))
+
+# Create histogram with 10 bins
+ggplot(new_sales, aes(x = amount)) + geom_histogram(bins = 10)
+
+# Which market is better if we measure % of sales over $1000
+pnorm(1000, mean = 5000, sd = 2000, lower.tail = FALSE)
+pnorm(1000, mean = new_mean, sd = new_sd, lower.tail = FALSE)
+# about the same
+```
+```{r central_limit_theorem}
+# Create a histogram of num_users
+ggplot(amir_deals, aes(x = num_users)) + geom_histogram(bins = 10)
+
+# Set seed to 104
+set.seed(104)
+
+# Sample 20 num_users with replacement from amir_deals
+sample(amir_deals$num_users, 20, replace = TRUE) %>%
+  # Take mean
+  mean()
+
+# Repeat the above 100 times
+sample_means <- replicate(100, sample(
+  amir_deals$num_users, size = 20, replace = TRUE
+) %>% mean())
+
+# Create data frame for plotting
+samples <- data.frame(mean = sample_means)
+
+# Histogram of sample means
+ggplot(samples, aes(x = mean)) + geom_histogram(bins = 10)
+```
+```{r clt_mean_of_means}
+# Estimate the mean by taking several random samples of deals,
+# since it is much easier than collecting data for everyone
+all_deals <- read_csv("all_deals.csv")
+
+# Set seed to 321
+set.seed(321)
+
+# Take 30 samples of 20 values of num_users, take mean of each sample
+sample_means <- replicate(30, sample(all_deals$num_users, size = 20) %>% mean())
+
+# Calculate mean of sample_means
+mean(sample_means)
+
+# Calculate mean of num_users in amir_deals
+mean(amir_deals$num_users)
+```
+```{r poisson}
+# What's the probability that Amir responds to 5 leads in a day, given that he responds to an average of 4?
+dpois(5, lambda = 4)
+
+# Amir's coworker responds to an average of 5.5 leads per day. What is the probability that she answers 5 leads in a day?
+dpois(5, lambda = 5.5)
+
+# What's the probability that Amir responds to 2 or fewer leads in a day?
+# <=
+ppois(2, lambda = 4)
+
+# What's the probability that Amir responds to more than 10 leads in a day?
+# >
+ppois(10, lambda = 4, lower.tail = FALSE)
+```
+```{r exponential}
+# Amir takes an average of 2.5 hours to respond
+# What's the probability it takes Amir less than an hour to respond to a lead?
+pexp(1, rate = 2 / 5)
+
+# Probability response takes > 4 hours
+pexp(4, rate = 2 / 5, lower.tail = FALSE)
+
+# What's the probability it takes Amir 3-4 hours to respond to a lead?
+pexp(4, rate = 2 / 5) - pexp(3, rate = 2 / 5)
+
+```

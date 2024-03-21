@@ -1,0 +1,15 @@
+```{r install_packages}
+# on r console run install.packages("ggvis") for example
+
+library(readr)
+mtcars <- read_csv("mtcars.csv")
+
+# Load the ggplot2 package
+library(ggplot2)
+
+# Retry the qplot() function
+qplot(mtcars$wt, mtcars$hp)
+
+# Check out the currently attached packages again
+search()
+```

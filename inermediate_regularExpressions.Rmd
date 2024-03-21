@@ -1,0 +1,49 @@
+grepl() returns TRUE when a pattern is found in the corresponding character string.
+grep() returns a vector of indices of the character strings that contains the pattern.
+which() fiven a logical vector return the indices for whicht that vector is TRUE 
+which(grepl(pattern = "a", x = animals)) # same as grep(patern = "a", x = animals) 
+sub() replace matches with other strings, only the first match and stops
+gsub() replace matches with other strings, all the matches get replaced
+?regex to find out more
+```{r grepl_grep_1}
+# The emails vector has already been defined for you
+emails <- c("john.doe@ivyleague.edu", "education@world.gov", "dalai.lama@peace.org",
+            "invalid.edu", "quant@bigdatacollege.edu", "cookie.monster@sesame.tv")
+
+# Use grepl() to match for "edu"
+grepl(pattern = "edu", x = emails)
+
+# Use grep() to match for "edu", save result to hits
+hits <- grep(pattern = "edu", x = emails)
+
+# Subset emails using hits
+emails[hits]
+```
+```{r grepl_grep_2}
+# The emails vector has already been defined for you
+emails <- c("john.doe@ivyleague.edu", "education@world.gov", "dalai.lama@peace.org",
+            "invalid.edu", "quant@bigdatacollege.edu", "cookie.monster@sesame.tv")
+
+# Use grepl() to match for .edu addresses more robustly
+grepl(pattern = ".*@.*\\.edu$", x = emails)
+
+
+# Use grep() to match for .edu addresses more robustly, save result to hits
+hits <- grep(pattern = ".*@.*\\.edu$", x = emails)
+
+
+# Subset emails using hits
+emails[hits]
+```
+```{r sub_1}
+# The emails vector has already been defined for you
+emails <- c("john.doe@ivyleague.edu", "education@world.gov", "global@peace.org",
+            "invalid.edu", "quant@bigdatacollege.edu", "cookie.monster@sesame.tv")
+
+# Use sub() to convert the email domains to datacamp.edu
+sub(pattern = "@.*\\.edu$", replacement = "@datacamp.edu", x = emails)
+```
+.*: A usual suspect! It can be read as "any character that is matched zero or more times".
+\\s: Match a space. The "s" is normally a character, escaping it (\\) makes it a metacharacter.
+[0-9]+: Match the numbers 0 to 9, at least once (+).
+([0-9]+): The parentheses are used to make parts of the matching string available to define the replacement. The \\1 in the replacement argument of sub() gets set to the string that is captured by the regular expression [0-9]+.
