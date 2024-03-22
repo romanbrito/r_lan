@@ -1,0 +1,18 @@
+World Happiness Report 
+https://worldhappiness.report/ed/2019/
+
+```{r worldhappiness}
+library(readr)
+library(dplyr)
+world_happiness <- read_csv("world_happiness.csv")
+```
+```{r corr_visual}
+# Create a scatterplot of happiness_score vs. life_exp
+# Add a linear trendline to scatterplot
+ggplot(world_happiness, aes(x = life_exp, y = happiness_score)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+
+# Correlation between life_exp and happiness_score
+cor(world_happiness$happiness_score, world_happiness$life_exp)
+```
